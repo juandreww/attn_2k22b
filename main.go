@@ -19,12 +19,12 @@ const (
 	dbname = "d4ehughfapgq0k"
 )
 
-type currency struct {
+type Currency struct {
 	ID string
 	Name string
 }
 
-type configconvertrate struct {
+type ConfigConvertRate struct {
 	CurrencyFrom string
 	CurrencyTo string
 	Rate string
@@ -73,14 +73,14 @@ func index(w http.ResponseWriter, r *http.Request) {
 func saveCurrency(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("This is savecurrency api: ", r.Method)
 
-	data := currency{
+	data := Currency{
 		r.FormValue("id"),
 		r.FormValue("name"),
 	}
 
 	fmt.Println(data)
 
-	cur := currency{}
+	cur := Currency{}
 	IsExist := false
 	sqlStatement := `SELECT id, name FROM currency WHERE (id=$1 OR name=$2);`
 	row := con.QueryRow(sqlStatement, data.ID, data.Name)
@@ -103,7 +103,7 @@ func saveCurrency(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 	} else {
-		data = currency{
+		data = Currency{
 			"error",
 			"error",
 		}
@@ -114,7 +114,7 @@ func saveCurrency(w http.ResponseWriter, r *http.Request) {
 
 func listCurrency(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("This is listcurrency api: ", r.Method)
-	var list []currency
+	var list []Currency
 
 	rows, err := con.Query("SELECT id, name FROM currency ORDER BY id ASC")
 	if err != nil {
@@ -123,7 +123,7 @@ func listCurrency(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close()
 
 	for rows.Next() {
-		cur := currency{}
+		cur := Currency{}
 		err := rows.Scan(&cur.ID, &cur.Name,)
 		switch err {
 		case sql.ErrNoRows:
@@ -143,7 +143,7 @@ func listCurrency(w http.ResponseWriter, r *http.Request) {
 
 func listCurrencyRate(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("This is listcurrencyrate api: ", r.Method)
-	var list []configconvertrate
+	var list []ConfigConvertRate
 
 	rows, err := con.Query("SELECT cf.name currencyfrom, ct.name currencyto, round(p.rate,2) rate FROM currencyrate p LEFT JOIN currency cf ON cf.id = p.currencyfrom LEFT JOIN currency ct ON ct.id = p.currencyto ORDER BY p.id ASC")
 	if err != nil {
@@ -152,7 +152,7 @@ func listCurrencyRate(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close()
 
 	for rows.Next() {
-		cur := configconvertrate{}
+		cur := ConfigConvertRate{}
 		err := rows.Scan(&cur.CurrencyFrom, &cur.CurrencyTo, &cur.Rate)
 
 		IsError := HandleErrorOfSelect(w, err)
@@ -170,7 +170,7 @@ func listCurrencyRate(w http.ResponseWriter, r *http.Request) {
 func addConversionRate(w http.ResponseWriter, r *http.Request) {
 	if (r.Method == http.MethodPost) {
 		fmt.Println("This is add conversion rate api: ", r.Method)
-		data := configconvertrate{
+		data := ConfigConvertRate{
 			r.FormValue("currencyfrom"),
 			r.FormValue("currencyto"),
 			r.FormValue("rate"),
@@ -178,14 +178,14 @@ func addConversionRate(w http.ResponseWriter, r *http.Request) {
 
 		var str string
 		var intval int
-		check1 := currency{}
+		check1 := Currency{}
 
 		sqlStatement := `SELECT count(id) id FROM currency WHERE (id=$1 OR id=$2);`
 		row := con.QueryRow(sqlStatement, data.CurrencyFrom, data.CurrencyTo)
 		err := row.Scan(&check1.ID)
 		IsError := HandleErrorOfSelect(w, err)
 		if (IsError == true) {
-			tmp := currency{
+			tmp := Currency{
 				"error",
 				"All CurrencyID is not found in database",
 			}
@@ -194,7 +194,7 @@ func addConversionRate(w http.ResponseWriter, r *http.Request) {
 		} else {
 			intval, err = strconv.Atoi(check1.ID)
 			if intval < 2 {
-				tmp := currency{
+				tmp := Currency{
 					"error",
 					"One of the CurrencyID is not found in database",
 				}
@@ -210,7 +210,7 @@ func addConversionRate(w http.ResponseWriter, r *http.Request) {
 		IsError = HandleErrorOfSelect(w, err)
 		if (IsError == true) {
 			if str != "0" {
-				tmp := currency{
+				tmp := Currency{
 					"error",
 					"CurrencyRate is not exist in the database",
 				}
@@ -220,7 +220,7 @@ func addConversionRate(w http.ResponseWriter, r *http.Request) {
 		} else {
 			intval, err = strconv.Atoi(str)
 			if intval >  0 {
-				tmp := currency{
+				tmp := Currency{
 					"error",
 					"CurrencyRate already exist in the database",
 				}
@@ -247,7 +247,7 @@ func addConversionRate(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 		
-		tmp := currency{
+		tmp := Currency{
 			"succeed",
 			"Currency Rate added",
 		}
@@ -262,7 +262,7 @@ func addConversionRate(w http.ResponseWriter, r *http.Request) {
 func convertCurrency(w http.ResponseWriter, r *http.Request) {
 	if (r.Method == http.MethodPost) {
 		fmt.Println("This is add convertcurrency api: ", r.Method)
-		data := configconvertrate{
+		data := ConfigConvertRate{
 			r.FormValue("currencyfrom"),
 			r.FormValue("currencyto"),
 			r.FormValue("amount"),
@@ -272,14 +272,14 @@ func convertCurrency(w http.ResponseWriter, r *http.Request) {
 		var str string
 		var intval int
 		var floatval, amount float64
-		check1 := currency{}
+		check1 := Currency{}
 
 		sqlStatement := `SELECT count(id) id FROM currency WHERE (id=$1 OR id=$2);`
 		row := con.QueryRow(sqlStatement, data.CurrencyFrom, data.CurrencyTo)
 		err := row.Scan(&check1.ID)
 		IsError := HandleErrorOfSelect(w, err)
 		if (IsError == true) {
-			tmp := currency{
+			tmp := Currency{
 				"error",
 				"All CurrencyID is not found in database",
 			}
@@ -288,7 +288,7 @@ func convertCurrency(w http.ResponseWriter, r *http.Request) {
 		} else {
 			intval, err = strconv.Atoi(check1.ID)
 			if intval < 2 {
-				tmp := currency{
+				tmp := Currency{
 					"error",
 					"One of the CurrencyID is not found in database",
 				}
@@ -304,7 +304,7 @@ func convertCurrency(w http.ResponseWriter, r *http.Request) {
 		IsError = HandleErrorOfSelect(w, err)
 		if (IsError == true) {
 			if str != "0" {
-				tmp := currency{
+				tmp := Currency{
 					"error",
 					"CurrencyRate is not exist in the database (1)",
 				}
@@ -321,7 +321,7 @@ func convertCurrency(w http.ResponseWriter, r *http.Request) {
 		err = row.Scan(&val1, &val2, &str)
 		IsError = HandleErrorOfSelect(w, err)
 		if (IsError == true) {
-			tmp := currency{
+			tmp := Currency{
 				"error",
 				"CurrencyRate is not exist in the database (2)",
 			}
@@ -339,7 +339,7 @@ func convertCurrency(w http.ResponseWriter, r *http.Request) {
 		
 		str = fmt.Sprintf("%.2f", amount)
 		
-		tmp := currency{
+		tmp := Currency{
 			"succeed",
 			"Congrats! You converted rate to " + str,
 		}
